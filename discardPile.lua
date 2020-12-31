@@ -9,8 +9,8 @@ DiscardPile.lastCardPlaced = nil
 -- TODO Add button to return cards to hand
 
 function DiscardPile.Init()
-    DiscardPile.discardDropZone = getObjectFromGUID(Config.DiscardDropZoneGuid)
-    DiscardPile.discardSlot1 = getObjectFromGUID(Config.DiscardFirstCardZoneGuid)
+    DiscardPile.discardDropZone = Wrapper.getObjectFromGUID(Config.DiscardDropZoneGuid)
+    DiscardPile.discardSlot1 = Wrapper.getObjectFromGUID(Config.DiscardFirstCardZoneGuid)
 end
 
 function DiscardPile.OnEnter(enterObject)

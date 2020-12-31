@@ -5,7 +5,7 @@ Deck.deckObject = nil
 -- TODO maybe add "draw" button
 
 function Deck.SpawnDecks()
-    Deck.deckObject = getObjectFromGUID(Config.DeckGuid)
+    Deck.deckObject = Wrapper.getObjectFromGUID(Config.DeckGuid)
 
     Wait.time(function()
         for i = 2, Config.DecksToSpawn do
