@@ -5,59 +5,49 @@ DiscardPile.discardSlot1 = nil
 DiscardPile.cardsHeld = {}
 DiscardPile.lastCardPlaced = nil
 
+-- TODO Track who played what
+-- TODO Add button to return cards to hand
+
 function DiscardPile.Init() 
     DiscardPile.discardDropZone = getObjectFromGUID(Config.DiscardDropZoneGuid)
     DiscardPile.discardSlot1 = getObjectFromGUID(Config.DiscardFirstCardZoneGuid)
 end
 
 function DiscardPile.OnEnter(enterObject)
-    print ("Card is being held over drop zone")
     table.insert(DiscardPile.cardsHeld, enterObject)
 end
 
 function DiscardPile.OnLeave(leaveObject)
     index = findObjectIndexInTable(DiscardPile.cardsHeld, leaveObject)
     if index >= 0 then
-        print ("Card is no longer held over drop zone")
         table.remove(DiscardPile.cardsHeld, index)
     end
 end
 
 function DiscardPile.HandleDrop(playerColor, droppedObject)
-    print("HANDLER")
     index = findObjectIndexInTable(DiscardPile.cardsHeld, droppedObject)
     if index >= 0 then
+        local cardName = droppedObject.getName()
+        Wrapper.broadcastToAll(Player[playerColor].steam_name .. " played a " .. cardName)
+
         table.remove(DiscardPile.cardsHeld, index)
         flipCardOverIfNeeded(droppedObject)
 
-        print(DiscardPile.discardDropZone)
         local cardsInPile = getCardsIgnoringCard(DiscardPile.discardDropZone.getObjects(), droppedObject)
 
         droppedObject.sticky = false
 
         if #cardsInPile == 0 then
-            print ("Putting card in slot 1")
             droppedObject.setPositionSmooth(DiscardPile.discardSlot1.getPosition(), false, true)
         else
-            print("locking cards...")
-            Stream.of(cardsInPile)
-                .forEach(function(card) 
-                    print("locking card")
-                    card.setLock(true)
-                end)
+            Stream.of(cardsInPile).forEach(|card| card.setLock(true))
             
-            print("placing played card")
             local newPosition = DiscardPile.lastCardPlaced.getPosition()
             newPosition.x = newPosition.x + 0.75
             newPosition.y = newPosition.y + 1
             droppedObject.setPositionSmooth(newPosition, false, true)
 
-            print("unlocking cards...")
-            Stream.of(cardsInPile)
-                .forEach(function(card) 
-                    print("unlocking card")
-                    card.setLock(false)
-                end)
+            Stream.of(cardsInPile).forEach(|card| card.setLock(false))
         end
 
         DiscardPile.lastCardPlaced = droppedObject

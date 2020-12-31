@@ -8,6 +8,7 @@ require("discardPile")
 local zoneHandlers = {}
 
 -- TODO add button to disable auto stacking, in case things go awry / point of order needs sorted out
+-- TODO Context menu option for bouncing "bad plays" + extra card from deck to player that played it?
 
 function onLoad()
     DiscardPile.Init()
@@ -32,12 +33,10 @@ function onObjectLeaveScriptingZone(zone, leaveObject)
 end
 
 function onObjectDropped(playerColor, droppedObject)
-    print ("Card was dropped")
     for guid, value in pairs(zoneHandlers) do
         value.HandleDrop(playerColor, droppedObject)
     end
 end
-
 
 function onUpdate()
 end
