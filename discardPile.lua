@@ -2,16 +2,12 @@ DiscardPile = {}
 
 DiscardPile.discardDropZone = nil
 DiscardPile.discardSlot1 = nil
-DiscardPile.discardSlot2 = nil
-DiscardPile.discardSlot3 = nil
 DiscardPile.cardsHeld = {}
 DiscardPile.lastCardPlaced = nil
 
 function DiscardPile.Init() 
     DiscardPile.discardDropZone = getObjectFromGUID(Config.DiscardDropZoneGuid)
-    DiscardPile.discardSlot1 = getObjectFromGUID("2f98d0")
-    DiscardPile.discardSlot2 = getObjectFromGUID("98d62d")
-    DiscardPile.discardSlot3 = getObjectFromGUID("dc688d")
+    DiscardPile.discardSlot1 = getObjectFromGUID(Config.DiscardFirstCardZoneGuid)
 end
 
 function DiscardPile.OnEnter(enterObject)
