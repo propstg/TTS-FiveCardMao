@@ -2,10 +2,14 @@ Deck = {}
 Deck.deckObject = nil
 
 function Deck.SpawnDecks()
-    for i = 1, Config.DecksToSpawn do
+    --for i = 1, Config.DecksToSpawn do
         Deck.spawnDeck()
-    end
+    --end
     Wait.time(function()
+        print (#(Deck.deckObject.getObjects()))
+        for i = 2, Config.DecksToSpawn do
+            Deck.deckObject.clone({position = Deck.deckObject.getPosition()})
+        end
         print (#(Deck.deckObject.getObjects()))
     end, 1)
 end
