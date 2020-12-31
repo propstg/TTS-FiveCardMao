@@ -13,5 +13,5 @@ function Deck.SpawnDecks()
         end
     end, 0.1)
 
-    Wait.time(|| Deck.deckObject.shuffle(), 1)
+    Wait.time(function() Deck.deckObject.shuffle() end, 1)
 end

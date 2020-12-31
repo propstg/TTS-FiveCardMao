@@ -1,6 +1,6 @@
 function getCardsIgnoringCard(cards, cardToIgnore)
     return Stream.of(cards)
-        .filter(|card| card != cardToIgnore)
+        .filter(function(card) return card ~= cardToIgnore end)
         .collect()
 end
 

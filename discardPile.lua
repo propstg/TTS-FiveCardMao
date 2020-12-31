@@ -8,7 +8,7 @@ DiscardPile.lastCardPlaced = nil
 -- TODO Track who played what
 -- TODO Add button to return cards to hand
 
-function DiscardPile.Init() 
+function DiscardPile.Init()
     DiscardPile.discardDropZone = getObjectFromGUID(Config.DiscardDropZoneGuid)
     DiscardPile.discardSlot1 = getObjectFromGUID(Config.DiscardFirstCardZoneGuid)
 end
@@ -40,14 +40,14 @@ function DiscardPile.HandleDrop(playerColor, droppedObject)
         if #cardsInPile == 0 then
             droppedObject.setPositionSmooth(DiscardPile.discardSlot1.getPosition(), false, true)
         else
-            Stream.of(cardsInPile).forEach(|card| card.setLock(true))
-            
+            Stream.of(cardsInPile).forEach(function(card) card.setLock(true) end)
+
             local newPosition = DiscardPile.lastCardPlaced.getPosition()
             newPosition.x = newPosition.x + 0.75
             newPosition.y = newPosition.y + 1
             droppedObject.setPositionSmooth(newPosition, false, true)
 
-            Stream.of(cardsInPile).forEach(|card| card.setLock(false))
+            Stream.of(cardsInPile).forEach(function(card) card.setLock(false) end)
         end
 
         DiscardPile.lastCardPlaced = droppedObject
