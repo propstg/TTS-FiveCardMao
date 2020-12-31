@@ -1,0 +1,266 @@
+==============================================================================
+.////stream.lua
+==============================================================================
+  1 Stream = {}
+  2 function Stream.of(array)
+        local function __filter(func)
+  4         local returnTable = {}
+    
+ 13         for index, v in pairs(array) do
+  9             if func(v, index) then
+  5                 table.insert(returnTable, v)
+                end
+            end
+    
+  4         return Stream.of(returnTable)
+        end
+    
+        local function __map(func)
+  2         local returnTable = {}
+    
+  5         for index, v in pairs(array) do
+  3             table.insert(returnTable, func(v, index))
+            end
+    
+  2         return Stream.of(returnTable)
+        end
+    
+        local function __shuffle()
+  3         for i = #array, 2, -1 do
+  2             local j = math.random(i)
+  2             array[i], array[j] = array[j], array[i]
+            end
+    
+  1         return Stream.of(array)
+        end
+    
+        -- terminators:
+    
+        local function __forEach(func)
+  5         for index, value in pairs(array) do
+  3             func(value, index)
+            end
+        end
+    
+        local function __collect()
+  8         return array
+        end
+    
+        local function __anyMatch(func)
+  7         for index, value in pairs(array) do
+  5             if func(value, index) then
+  1                 return true
+                end
+            end
+    
+  2         return false
+        end
+    
+        local function __count()
+  2         return #array
+        end
+    
+ 22     return {
+ 22         filter = __filter,
+ 22         map = __map,
+ 22         shuffle = __shuffle,
+    
+ 22         forEach = __forEach,
+ 22         collect = __collect,
+ 22         anyMatch = __anyMatch,
+ 22         count = __count
+ 22     }
+    end
+
+==============================================================================
+.////wrapper.lua
+==============================================================================
+  1 Wrapper = {}
+    
+  2 setmetatable(Wrapper, {
+        __index = function(_, key)
+  3         Wrapper[key] = _G[key]
+  3         return _G[key]
+        end
+  1 })
+
+==============================================================================
+test/stream_spec.lua
+==============================================================================
+  2 describe('stream', function()
+    
+        local INIT_TABLE
+    
+  2     setup(function()
+  1         require('../stream')
+        end)
+    
+  2     before_each(function()
+ 15         INIT_TABLE = {
+                {
+ 15                 Name = 'Name 1',
+ 15                 SomeBoolean = true
+ 15             },{
+ 15                 Name = 'Name 2',
+ 15                 SomeBoolean = false
+ 15             },{
+ 15                 Name = 'Name 3',
+ 15                 SomeBoolean = true
+                }
+ 15         }
+        end)
+    
+  2     it('filter - does not fail when no elements', function()
+  3         local values = Stream.of({})
+  1             .filter(function(v, i) return false end)
+  1             .collect()
+    
+  1         assert.equals(#values, 0)
+        end)
+    
+  2     it('filter - all filtered', function()
+  3         local values = Stream.of(INIT_TABLE)
+  4             .filter(function(v, i) return false end)
+  1             .collect()
+    
+  1         assert.equals(#values, 0)
+        end)
+    
+  2     it('filter - none filtered', function()
+  3         local values = Stream.of(INIT_TABLE)
+  4             .filter(function(v, i) return true end)
+  1             .collect()
+    
+  1         assert.equals(#values, 3)
+  1         assert.equals(values[1].Name, 'Name 1')
+  1         assert.equals(values[2].Name, 'Name 2')
+  1         assert.equals(values[3].Name, 'Name 3')
+        end)
+    
+  2     it('filter - some filtered', function()
+  3         local values = Stream.of(INIT_TABLE)
+  4             .filter(function(v, i) return v.SomeBoolean end)
+  1             .collect()
+    
+  1         assert.equals(#values, 2)
+  1         assert.equals(values[1].Name, 'Name 1')
+  1         assert.equals(values[2].Name, 'Name 3')
+        end)
+    
+  2     it('map - does not fail when no elements', function()
+  3         local values = Stream.of({})
+  1             .map(function(v, i) return v.Name end)
+  1             .collect()
+    
+  1         assert.equals(#values, 0)
+        end)
+    
+  2     it('map - successfully maps elements', function()
+  3         local values = Stream.of(INIT_TABLE)
+  4             .map(function(v, i) return v.Name end)
+  1             .collect()
+    
+  1         assert.equals(#values, 3)
+  1         assert.equals(values[1], 'Name 1')
+  1         assert.equals(values[2], 'Name 2')
+  1         assert.equals(values[3], 'Name 3')
+        end)
+        
+  2     it('forEach - does not fail when no elements', function()
+  1         local callCount = 0
+    
+  2         local values = Stream.of({})
+  1             .forEach(function(v, i) callCount = callCount + 1 end)
+    
+  1         assert.equals(callCount, 0)
+        end)
+    
+  2     it('forEach - called for every element', function()
+  1         local callCount = 0
+    
+  3         local values = Stream.of(INIT_TABLE)
+  1             .shuffle()
+  4             .forEach(function(v, i) callCount = callCount + 1 end)
+    
+  1         assert.equals(callCount, 3)
+        end)
+    
+  2     it('collect - does not fail when no elements', function()
+  1         local values = Stream.of({}).collect()
+    
+  1         assert.equals(#values, 0)
+        end)
+    
+  2     it('collect - has elements', function()
+  1         local values = Stream.of(INIT_TABLE).collect()
+    
+  1         assert.equals(#values, 3)
+        end)
+    
+  2     it('anyMatch - does not fail when no elements', function()
+  2         local doAnyMatch = Stream.of({})
+  1             .anyMatch(function(v, i) return not v.SomeBoolean end)
+    
+  1         assert.is_false(doAnyMatch)
+        end)
+    
+  2     it('anyMatch - returns true when any element matches', function()
+  2         local doAnyMatch = Stream.of(INIT_TABLE)
+  3             .anyMatch(function(v, i) return not v.SomeBoolean end)
+    
+  1         assert.is_true(doAnyMatch)
+        end)
+    
+  2     it('anyMatch - returns false when no elements match', function()
+  2         local doAnyMatch = Stream.of(INIT_TABLE)
+  4             .anyMatch(function(v, i) return v.Name == 'Name 4' end)
+    
+  1         assert.is_false(doAnyMatch)
+        end)
+    
+  2     it('count - does not fail when no elements', function()
+  1         local count = Stream.of({}).count()
+    
+  1         assert.equals(count, 0)
+        end)
+    
+  2     it('collect - has elements', function()
+  1         local count = Stream.of(INIT_TABLE).count()
+    
+  1         assert.equals(count, 3)
+        end)
+    end)
+
+==============================================================================
+test/wrapper_spec.lua
+==============================================================================
+  2 describe('wrapper', function()
+    
+  2     before_each(function()
+  1         require('../wrapper')
+        end)
+    
+  2     it('looks up and returns global function when called', function()
+  2         _G.SomeNative = function() return 'Some Value' end
+  2         _G.SomeOtherNative = function() return 'Some Other Value' end
+    
+  1         assert.is_not_nil(Wrapper.print)
+  1         assert.is_not_nil(Wrapper.SomeNative)
+  1         assert.is_not_nil(Wrapper.SomeOtherNative)
+  1         assert.equals('Some Value', Wrapper.SomeNative())
+  1         assert.equals('Some Other Value', Wrapper.SomeOtherNative())
+        end)
+    end)
+
+==============================================================================
+Summary
+==============================================================================
+
+File                  Hits Missed Coverage
+------------------------------------------
+.////stream.lua       32   0      100.00%
+.////wrapper.lua      5    0      100.00%
+test/stream_spec.lua  87   0      100.00%
+test/wrapper_spec.lua 11   0      100.00%
+------------------------------------------
+Total                 135  0      100.00%
