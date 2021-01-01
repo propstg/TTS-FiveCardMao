@@ -1,5 +1,6 @@
 require("wrapper")
 require("config")
+require("strings")
 require("stream")
 require("cardUtils")
 require("deck")
