@@ -36,12 +36,12 @@ function DiscardPile.HandleDrop(playerColor, droppedObject)
         local cardsInPile = getCardsIgnoringCard(DiscardPile.discardDropZone.getObjects(), droppedObject)
 
         droppedObject.sticky = false
+        droppedObject.setRotationSmooth({x=0, y=0, z=0}, false, true)
 
         if #cardsInPile == 0 then
             droppedObject.setPositionSmooth(DiscardPile.discardSlot1.getPosition(), false, true)
         else
             Stream.of(cardsInPile).forEach(function(card) card.setLock(true) end)
-
             local newPosition = DiscardPile.lastCardPlaced.getPosition()
             newPosition.x = newPosition.x + 0.75
             newPosition.y = newPosition.y + 1
