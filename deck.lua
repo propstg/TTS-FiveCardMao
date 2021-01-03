@@ -15,3 +15,9 @@ function Deck.SpawnDecks()
 
     Wait.time(function() Deck.deckObject.shuffle() end, 1)
 end
+
+function Deck.HandleObjectRemoved(_, object)
+    Wait.frames(function()
+        Wrapper.broadcastToAll(Strings.get("PlayerRemovedCardFromDeck"):format(Player[object.held_by_color].steam_name))
+    end, 3)
+end

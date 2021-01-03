@@ -1,6 +1,7 @@
 Strings = {
     en = {
         PlayerPlayedCard = "%s played %s",
+        PlayerRemovedCardFromDeck = "%s pulled a card from the deck",
     },
 }
 

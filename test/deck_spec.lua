@@ -19,12 +19,16 @@ describe("deck", function()
         _G.Config = {
             DeckGuid = "deckGuid",
             DecksToSpawn = 1,
+            Locale = "en",
         }
         _G.Wrapper = wrapperMock
         _G.Wait = waitMock
+        _G.Player = {Red = {steam_name = "Blarglebottoms"}}
+        _G.Strings = mockagne.getMock()
 
         when(wrapperMock.getObjectFromGUID("deckGuid")).thenAnswer(deckObjectMock)
         when(deckObjectMock.getPosition()).thenAnswer(deckObjectPosition)
+        when(_G.Strings.get("PlayerRemovedCardFromDeck")).thenAnswer("mock string %s")
 
         require("../deck")
     end)
@@ -71,5 +75,15 @@ describe("deck", function()
         waitMock.stored_calls[2].args[1]()
 
         verify(deckObjectMock.shuffle())
+    end)
+
+    it("should broadcast who removed a card when one is removed", function()
+        object = {held_by_color = "Red"}
+
+        Deck.HandleObjectRemoved(object, object)
+
+        waitMock.stored_calls[1].args[1]()
+
+        verify(wrapperMock.broadcastToAll("mock string Blarglebottoms"))
     end)
 end)
