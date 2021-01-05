@@ -75,8 +75,21 @@ describe("deck", function()
         assert.equal(0, #DiscardPile.cardsHeld)
     end)
 
+    it("should show rejected message when dropped object is not a card", function()
+        when(_G.Strings.get("OnlyPlayCardsInDiscardPile")).thenAnswer("rejected")
+
+        local object = {}
+        object.tag = "Deck"
+        DiscardPile.cardsHeld = {object}
+
+        DiscardPile.HandleDrop("Red", object)
+
+        verify(wrapperMock.broadcastToAll("rejected", "mock color"));
+    end)
+
     it("should handle first card dropped on HandleDrop", function()
         local object = {}
+        object.tag = "Card"
         object.sticky = true
         object.setRotationSmoothCalled = false
         object.setPositionSmoothCalled = false
@@ -109,6 +122,7 @@ describe("deck", function()
     it("should handle additional cards dropped on HandleDrop", function()
         local object = {}
         object.sticky = true
+        object.tag = "Card"
         object.setRotationSmoothCalled = false
         object.setPositionSmoothCalled = false
         object.setPositionSmoothCalledWith = nil
