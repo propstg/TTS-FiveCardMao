@@ -1,7 +1,6 @@
 Deck = {}
 Deck.deckObject = nil
 
--- TODO add message when someone draws
 -- TODO maybe add "draw" button
 
 function Deck.SpawnDecks()
@@ -18,6 +17,8 @@ end
 
 function Deck.HandleObjectRemoved(_, object)
     Wait.frames(function()
-        Wrapper.broadcastToAll(Strings.get("PlayerRemovedCardFromDeck"):format(Player[object.held_by_color].steam_name))
+        local message = Strings.get("PlayerRemovedCardFromDeck"):format(Player[object.held_by_color].steam_name)
+        local color = Wrapper.Color.fromString(object.held_by_color)
+        Wrapper.broadcastToAll(message, color)
     end, 3)
 end

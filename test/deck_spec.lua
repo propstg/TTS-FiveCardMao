@@ -10,9 +10,12 @@ describe("deck", function()
     local waitMock = nil
     local deckObjectMock = nil
     local deckObjectPosition = {x = 0, y = 0, z = 0}
+    local colorMock = nil
 
     before_each(function()
+        colorMock = mockagne.getMock()
         wrapperMock = mockagne.getMock()
+        wrapperMock.Color = colorMock
         waitMock = mockagne.getMock()
         deckObjectMock = mockagne.getMock()
 
@@ -29,6 +32,7 @@ describe("deck", function()
         when(wrapperMock.getObjectFromGUID("deckGuid")).thenAnswer(deckObjectMock)
         when(deckObjectMock.getPosition()).thenAnswer(deckObjectPosition)
         when(_G.Strings.get("PlayerRemovedCardFromDeck")).thenAnswer("mock string %s")
+        when(colorMock.fromString("Red")).thenAnswer("mock color")
 
         require("../deck")
     end)
@@ -84,6 +88,6 @@ describe("deck", function()
 
         waitMock.stored_calls[1].args[1]()
 
-        verify(wrapperMock.broadcastToAll("mock string Blarglebottoms"))
+        verify(wrapperMock.broadcastToAll("mock string Blarglebottoms", "mock color"))
     end)
 end)

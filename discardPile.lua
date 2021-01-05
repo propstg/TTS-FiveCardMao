@@ -28,7 +28,7 @@ function DiscardPile.HandleDrop(playerColor, droppedObject)
     index = findObjectIndexInTable(DiscardPile.cardsHeld, droppedObject)
     if index >= 0 then
         local cardName = droppedObject.getName()
-        Wrapper.broadcastToAll(Strings.get("PlayerPlayedCard"):format(Player[playerColor].steam_name, cardName))
+        DiscardPile.broadcastMessage(playerColor, cardName)
 
         table.remove(DiscardPile.cardsHeld, index)
         flipCardOverIfNeeded(droppedObject)
@@ -52,4 +52,10 @@ function DiscardPile.HandleDrop(playerColor, droppedObject)
 
         DiscardPile.lastCardPlaced = droppedObject
     end
+end
+
+function DiscardPile.broadcastMessage(playerColor, cardName)
+    local message = Strings.get("PlayerPlayedCard"):format(Player[playerColor].steam_name, cardName)
+    local color = Wrapper.Color.fromString(playerColor)
+    Wrapper.broadcastToAll(message, color)
 end
