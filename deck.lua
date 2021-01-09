@@ -1,7 +1,8 @@
 Deck = {}
 Deck.deckObject = nil
 
--- TODO add "draw" button to replace draw context menu option, unless person who used context menu option can be determined
+-- TODO add "draw" button to replace draw context menu option
+--      unless person who used context menu option can be determined
 
 function Deck.SpawnDecks()
     Deck.deckObject = Wrapper.getObjectFromGUID(Config.DeckGuid)

@@ -1,5 +1,6 @@
 require "../stream"
 require "../cardUtils"
+require "../strings"
 local mockagne = require "mockagne"
 local when = mockagne.when
 local any = mockagne.any
@@ -22,13 +23,19 @@ describe("deck", function()
             Locale = "en",
         }
         _G.Wrapper = wrapperMock
-        _G.Player = {Red = {steam_name = "Blarglebottoms"}}
-        _G.Strings = mockagne.getMock()
+        _G.Player = {
+            Red = {steam_name = "Blarglebottoms"},
+            Blue = {steam_name = "Blueglebottoms"},
+        }
+        function _G.Player.Red.getHandTransform(handIndex) return {position = "red hand position " .. handIndex} end
 
-        when(_G.Strings.get("PlayerPlayedCard")).thenAnswer("mock string %s %s")
         when(colorMock.fromString("Red")).thenAnswer("mock color")
 
         require("../discardPile")
+
+        DiscardPile.discardDropZone = mockagne.getMock()
+        DiscardPile.discardSlot1 = mockagne.getMock()
+        DiscardPile.lastCardPlaced = mockagne.getMock()
     end)
 
     it("should grab objects using guids from config on init", function()
@@ -76,33 +83,18 @@ describe("deck", function()
     end)
 
     it("should show rejected message when dropped object is not a card", function()
-        when(_G.Strings.get("OnlyPlayCardsInDiscardPile")).thenAnswer("rejected")
-
         local object = {}
         object.tag = "Deck"
         DiscardPile.cardsHeld = {object}
 
         DiscardPile.HandleDrop("Red", object)
 
-        verify(wrapperMock.broadcastToAll("rejected", "mock color"));
+        verify(wrapperMock.broadcastToAll("Please only play cards in the discard pile", "mock color"));
     end)
 
     it("should handle first card dropped on HandleDrop", function()
-        local object = {}
-        object.tag = "Card"
-        object.sticky = true
-        object.setRotationSmoothCalled = false
-        object.setPositionSmoothCalled = false
-        object.setPositionSmoothCalledWith = nil
-        object.getName = function() return "card name" end
-        function object.setRotationSmooth(position) object.setRotationSmoothCalled = true end
-        function object.setPositionSmooth(position, _, _)
-            object.setPositionSmoothCalled = true
-            object.setPositionSmoothCalledWith = position
-        end
+        local object = createMockCard()
         DiscardPile.cardsHeld = {object}
-        DiscardPile.discardDropZone = mockagne.getMock()
-        DiscardPile.discardSlot1 = mockagne.getMock()
 
         when(DiscardPile.discardDropZone.getObjects()).thenAnswer({})
         when(DiscardPile.discardSlot1.getPosition()).thenAnswer("discard slot 1 position")
@@ -111,31 +103,17 @@ describe("deck", function()
 
         assert.equal(0, #DiscardPile.cardsHeld)
         assert.equal(object, DiscardPile.lastCardPlaced)
-        assert.equal(false, object.sticky)
-        assert.equal(true, object.setRotationSmoothCalled)
-        assert.equal(true, object.setPositionSmoothCalled)
+        assert.is_false(object.sticky)
+        assert.is_true(object.setRotationSmoothCalled)
+        assert.is_true(object.setPositionSmoothCalled)
         assert.equal("discard slot 1 position", object.setPositionSmoothCalledWith)
 
-        verify(wrapperMock.broadcastToAll("mock string Blarglebottoms card name", "mock color"));
+        verify(wrapperMock.broadcastToAll("Blarglebottoms played card name", "mock color"));
     end)
 
     it("should handle additional cards dropped on HandleDrop", function()
-        local object = {}
-        object.sticky = true
-        object.tag = "Card"
-        object.setRotationSmoothCalled = false
-        object.setPositionSmoothCalled = false
-        object.setPositionSmoothCalledWith = nil
-        object.getName = function() return "card name" end
-        function object.setRotationSmooth(position) object.setRotationSmoothCalled = true end
-        function object.setPositionSmooth(position)
-            object.setPositionSmoothCalled = true
-            object.setPositionSmoothCalledWith = position
-        end
+        local object = createMockCard()
         DiscardPile.cardsHeld = {object}
-        DiscardPile.discardDropZone = mockagne.getMock()
-        DiscardPile.discardSlot1 = mockagne.getMock()
-        DiscardPile.lastCardPlaced = mockagne.getMock()
 
         when(DiscardPile.discardDropZone.getObjects()).thenAnswer({DiscardPile.lastCardPlaced})
         when(DiscardPile.lastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
@@ -144,13 +122,126 @@ describe("deck", function()
 
         assert.equal(0, #DiscardPile.cardsHeld)
         assert.equal(object, DiscardPile.lastCardPlaced)
-        assert.equal(false, object.sticky)
-        assert.equal(true, object.setRotationSmoothCalled)
-        assert.equal(true, object.setPositionSmoothCalled)
+        assert.is_false(object.sticky)
+        assert.is_true(object.setRotationSmoothCalled)
+        assert.is_true(object.setPositionSmoothCalled)
         assert.equal(1.75, object.setPositionSmoothCalledWith.x)
         assert.equal(2, object.setPositionSmoothCalledWith.y)
 
-        verify(wrapperMock.broadcastToAll("mock string Blarglebottoms card name", "mock color"));
+        verify(wrapperMock.broadcastToAll("Blarglebottoms played card name", "mock color"));
+    end)
+
+    it("should set PlayedBy variable when card is played", function()
+        local object = createMockCard()
+        DiscardPile.cardsHeld = {object}
+
+        when(DiscardPile.discardDropZone.getObjects()).thenAnswer({DiscardPile.lastCardPlaced})
+        when(DiscardPile.lastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
+
+        DiscardPile.HandleDrop("Red", object)
+
+        assert.equal("PlayedBy", object.setVarCalledWith[1].variableName)
+        assert.equal("Red", object.setVarCalledWith[1].value)
+    end)
+
+    it("should register addContextMenuItems on played card", function()
+        local object = createMockCard()
+        DiscardPile.cardsHeld = {object}
+
+        when(DiscardPile.discardDropZone.getObjects()).thenAnswer({DiscardPile.lastCardPlaced})
+        when(DiscardPile.lastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
+
+        DiscardPile.HandleDrop("Red", object)
+
+        assert.equal("Return", object.addContextMenuItemCalledWith[1].label)
+        assert.equal("Return + Penalty", object.addContextMenuItemCalledWith[2].label)
+    end)
+
+    describe("return context menu item", function()
+        local card = nil
+
+        before_each(function()
+            card = createMockCard()
+            DiscardPile.cardsHeld = {card}
+            when(DiscardPile.discardDropZone.getObjects()).thenAnswer({DiscardPile.lastCardPlaced})
+            when(DiscardPile.lastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
+
+            DiscardPile.HandleDrop("Red", card)
+            card.addContextMenuItemCalledWith[1].handlerFunction("Blue")
+        end)
+
+        it("should set ReturnedBy variable to player that used the menu item", function()
+            assert.equal("ReturnedBy", card.setVarCalledWith[2].variableName)
+            assert.equal("Blue", card.setVarCalledWith[2].value)
+        end)
+
+        it("should broadcast message to everyone when menu item used", function()
+            verify(wrapperMock.broadcastToAll("Blueglebottoms returned card name to Blarglebottoms"))
+        end)
+
+        it("should move card to the hand zone in front of the player that played the card", function()
+            assert.equal("red hand position 2", card.setPositionSmoothCalledWith)
+        end)
+
+        it("should remove context menu items from card after using", function()
+            assert.is_true(card.clearContextMenuCalled)
+        end)
+    end)
+
+    describe("return + penalty context menu item", function()
+        local card = nil
+        local takeObjectCalledWith = nil
+
+        before_each(function()
+            card = createMockCard()
+            DiscardPile.cardsHeld = {card}
+            when(DiscardPile.discardDropZone.getObjects()).thenAnswer({DiscardPile.lastCardPlaced})
+            when(DiscardPile.lastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
+            _G.Deck = {
+                deckObject = {
+                    takeObject = function(obj)
+                        takeObjectCalledWith = obj
+                    end
+                }
+            }
+
+            DiscardPile.HandleDrop("Red", card)
+            card.addContextMenuItemCalledWith[2].handlerFunction("Blue")
+        end)
+        
+        it("should set ReturnedBy variable to player that used the menu item", function()
+            assert.equal("ReturnedBy", card.setVarCalledWith[2].variableName)
+            assert.equal("Blue", card.setVarCalledWith[2].value)
+        end)
+
+        it("should broadcast messages to everyone when menu item used", function()
+            verify(wrapperMock.broadcastToAll("Blueglebottoms returned card name to Blarglebottoms"))
+            verify(wrapperMock.broadcastToAll("Blueglebottoms gave a card to Blarglebottoms"))
+        end)
+
+        it("should move card to the hand zone in front of the player that played the card", function()
+            assert.equal("red hand position 2", card.setPositionSmoothCalledWith)
+        end)
+
+        it("should move additional penalty card to the hand zone in front of the player that played the card", function()
+            assert.not_nil(takeObjectCalledWith)
+            assert.equal("red hand position 2", takeObjectCalledWith.position)
+        end)
+
+        it("should set GivenBy variable to player that used the menu item on penalty card", function()
+            assert.not_nil(takeObjectCalledWith)
+            assert.not_nil(takeObjectCalledWith.callback_function)
+
+            local newCard = createMockCard()
+            takeObjectCalledWith.callback_function(newCard)
+
+            assert.equal("GivenBy", newCard.setVarCalledWith[1].variableName)
+            assert.equal("Blue", newCard.setVarCalledWith[1].value)
+        end)
+
+        it("should remove context menu items from card after using", function()
+            assert.is_true(card.clearContextMenuCalled)
+        end)
     end)
 
     it("should do nothing when card is not in cardsHeld on HandleDrop", function()
@@ -162,4 +253,36 @@ describe("deck", function()
     
         assert.equal(0, #DiscardPile.cardsHeld)
     end)
+
+    function createMockCard()
+        local object = {}
+        object.sticky = true
+        object.tag = "Card"
+        object.setRotationSmoothCalled = false
+        object.setPositionSmoothCalled = false
+        object.clearContextMenuCalled = false
+        object.setPositionSmoothCalledWith = nil
+        object.addContextMenuItemCalledWith = {}
+        object.setVarCalledWith = {}
+        object.getName = function() return "card name" end
+        function object.setRotationSmooth(position) object.setRotationSmoothCalled = true end
+        function object.setPositionSmooth(position, _, _)
+            object.setPositionSmoothCalled = true
+            object.setPositionSmoothCalledWith = position
+        end
+        function object.addContextMenuItem(label, handlerFunction)
+            table.insert(object.addContextMenuItemCalledWith, {
+                label = label, handlerFunction = handlerFunction
+            })
+        end
+        function object.setVar(variableName, value)
+            table.insert(object.setVarCalledWith, {
+                variableName = variableName, value = value
+            })
+        end
+        function object.clearContextMenu()
+            object.clearContextMenuCalled = true
+        end
+        return object
+    end
 end)

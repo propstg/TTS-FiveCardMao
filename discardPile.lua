@@ -64,12 +64,13 @@ function DiscardPile.HandleDrop(playerColor, droppedObject)
 end
 
 function DiscardPile.addReturnContextMenuItem(player, droppedObject)
-    droppedObject.addContextMenuItem("Return", function(callingPlayer)
+    droppedObject.addContextMenuItem(Strings.get("Label_Context_Return"), function(callingPlayer)
         local callingPlayerName = Player[callingPlayer].steam_name
         local targetPlayerName = Player[player].steam_name
 
         droppedObject.setVar("ReturnedBy", callingPlayer)
-        local message = Strings.get("ReturnedCardToPlayer"):format(callingPlayerName, droppedObject.getName(), targetPlayerName)
+        local message =
+            Strings.get("ReturnedCardToPlayer"):format(callingPlayerName, droppedObject.getName(), targetPlayerName)
         DiscardPile.broadcastMessage(callingPlayer, message)
         droppedObject.setPositionSmooth(Player[player].getHandTransform(2).position)
 
@@ -78,15 +79,15 @@ function DiscardPile.addReturnContextMenuItem(player, droppedObject)
 end
 
 function DiscardPile.addBadPlayContextMenuItem(player, droppedObject)
-    droppedObject.addContextMenuItem("Return + Penalty", function(callingPlayer)
+    droppedObject.addContextMenuItem(Strings.get("Label_Context_ReturnPenalty"), function(callingPlayer)
         local callingPlayerName = Player[callingPlayer].steam_name
         local targetPlayerName = Player[player].steam_name
 
         droppedObject.setVar("ReturnedBy", callingPlayer)
-        local message = Strings.get("ReturnedCardToPlayer"):format(callingPlayerName, droppedObject.getName(), targetPlayerName)
+        local message =
+            Strings.get("ReturnedCardToPlayer"):format(callingPlayerName, droppedObject.getName(), targetPlayerName)
         DiscardPile.broadcastMessage(callingPlayer, message)
         droppedObject.setPositionSmooth(Player[player].getHandTransform(2).position)
-        droppedObject.clearContextMenu()
 
         message = Strings.get("GavePlayerCard"):format(callingPlayerName, targetPlayerName)
         DiscardPile.broadcastMessage(callingPlayer, message)
