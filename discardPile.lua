@@ -6,7 +6,7 @@ DiscardPile.cardsHeld = {}
 DiscardPile.lastCardPlaced = nil
 
 -- TODO Track who played what
--- TODO Add button to return cards to hand
+-- TODO fix card placement when card is removed
 
 function DiscardPile.Init()
     DiscardPile.discardDropZone = Wrapper.getObjectFromGUID(Config.DiscardDropZoneGuid)
@@ -55,8 +55,49 @@ function DiscardPile.HandleDrop(playerColor, droppedObject)
             Stream.of(cardsInPile).forEach(function(card) card.setLock(false) end)
         end
 
+        DiscardPile.addReturnContextMenuItem(playerColor, droppedObject)
+        DiscardPile.addBadPlayContextMenuItem(playerColor, droppedObject)
+
+        droppedObject.setVar("PlayedBy", playerColor)
         DiscardPile.lastCardPlaced = droppedObject
     end
+end
+
+function DiscardPile.addReturnContextMenuItem(player, droppedObject)
+    droppedObject.addContextMenuItem(Strings.get("Label_Context_Return"), function(callingPlayer)
+        local callingPlayerName = Player[callingPlayer].steam_name
+        local targetPlayerName = Player[player].steam_name
+
+        droppedObject.setVar("ReturnedBy", callingPlayer)
+        local message =
+            Strings.get("ReturnedCardToPlayer"):format(callingPlayerName, droppedObject.getName(), targetPlayerName)
+        DiscardPile.broadcastMessage(callingPlayer, message)
+        droppedObject.setPositionSmooth(Player[player].getHandTransform(2).position)
+
+        droppedObject.clearContextMenu()
+    end)
+end
+
+function DiscardPile.addBadPlayContextMenuItem(player, droppedObject)
+    droppedObject.addContextMenuItem(Strings.get("Label_Context_ReturnPenalty"), function(callingPlayer)
+        local callingPlayerName = Player[callingPlayer].steam_name
+        local targetPlayerName = Player[player].steam_name
+
+        droppedObject.setVar("ReturnedBy", callingPlayer)
+        local message =
+            Strings.get("ReturnedCardToPlayer"):format(callingPlayerName, droppedObject.getName(), targetPlayerName)
+        DiscardPile.broadcastMessage(callingPlayer, message)
+        droppedObject.setPositionSmooth(Player[player].getHandTransform(2).position)
+
+        message = Strings.get("GavePlayerCard"):format(callingPlayerName, targetPlayerName)
+        DiscardPile.broadcastMessage(callingPlayer, message)
+        Deck.deckObject.takeObject({
+            position = Player[player].getHandTransform(2).position,
+            callback_function = function(card) card.setVar("GivenBy", callingPlayer) end
+        })
+
+        droppedObject.clearContextMenu()
+    end)
 end
 
 function DiscardPile.broadcastPlayedMessage(playerColor, cardName)

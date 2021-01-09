@@ -1,7 +1,8 @@
 Deck = {}
 Deck.deckObject = nil
 
--- TODO maybe add "draw" button
+-- TODO add "draw" button to replace draw context menu option
+--      unless person who used context menu option can be determined
 
 function Deck.SpawnDecks()
     Deck.deckObject = Wrapper.getObjectFromGUID(Config.DeckGuid)
@@ -17,8 +18,10 @@ end
 
 function Deck.HandleObjectRemoved(_, object)
     Wait.frames(function()
-        local message = Strings.get("PlayerRemovedCardFromDeck"):format(Player[object.held_by_color].steam_name)
-        local color = Wrapper.Color.fromString(object.held_by_color)
-        Wrapper.broadcastToAll(message, color)
+        if object.held_by_color ~= nil then
+            local message = Strings.get("PlayerRemovedCardFromDeck"):format(Player[object.held_by_color].steam_name)
+            local color = Wrapper.Color.fromString(object.held_by_color)
+            Wrapper.broadcastToAll(message, color)
+        end
     end, 3)
 end
