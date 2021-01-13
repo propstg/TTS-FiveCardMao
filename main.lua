@@ -5,17 +5,19 @@ require("stream")
 require("cardUtils")
 require("deck")
 require("discardPile")
+require("playerHand")
 
 local zoneHandlers = {}
 local leaveHandlers = {}
 
 -- TODO add button to disable auto stacking, in case things go awry / point of order needs sorted out
--- TODO Context menu option for bouncing "bad plays" + extra card from deck to player that played it?
+-- TODO sort cards button for hand
 
 function onLoad()
     DiscardPile.Init()
     registerLeaveHandlers()
     registerZoneHandlers()
+    PlayerHands.Init()
     Deck.SpawnDecks()
 end
 
@@ -28,6 +30,7 @@ function registerZoneHandlers()
 end
 
 function onObjectEnterScriptingZone(zone, enterObject)
+    print(zone.guid)
     if zoneHandlers[zone.guid] then
         zoneHandlers[zone.guid].OnEnter(enterObject)
     end
@@ -43,6 +46,7 @@ function onObjectDropped(playerColor, droppedObject)
     for guid, value in pairs(zoneHandlers) do
         value.HandleDrop(playerColor, droppedObject)
     end
+    PlayerHands.HandleDrop(playerColor, droppedObject)
 end
 
 function onObjectLeaveContainer(container, object)

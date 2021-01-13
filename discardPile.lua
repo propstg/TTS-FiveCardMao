@@ -5,8 +5,9 @@ DiscardPile.discardSlot1 = nil
 DiscardPile.cardsHeld = {}
 DiscardPile.lastCardPlaced = nil
 
--- TODO Track who played what
 -- TODO fix card placement when card is removed
+-- TODO compress pile button (or do it automatically?)
+-- TODO reshuffle button
 
 function DiscardPile.Init()
     DiscardPile.discardDropZone = Wrapper.getObjectFromGUID(Config.DiscardDropZoneGuid)

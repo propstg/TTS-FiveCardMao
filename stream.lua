@@ -22,6 +22,14 @@ function Stream.of(array)
         return Stream.of(returnTable)
     end
 
+    local function __peek(func)
+        for index, value in pairs(array) do
+            func(value, index)
+        end
+
+        return array
+    end
+
     local function __shuffle()
         for i = #array, 2, -1 do
             local j = math.random(i)
@@ -61,6 +69,7 @@ function Stream.of(array)
         filter = __filter,
         map = __map,
         shuffle = __shuffle,
+        peek = __peek,
 
         forEach = __forEach,
         collect = __collect,
