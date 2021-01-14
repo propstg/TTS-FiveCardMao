@@ -30,7 +30,6 @@ function registerZoneHandlers()
 end
 
 function onObjectEnterScriptingZone(zone, enterObject)
-    print(zone.guid)
     if zoneHandlers[zone.guid] then
         zoneHandlers[zone.guid].OnEnter(enterObject)
     end
