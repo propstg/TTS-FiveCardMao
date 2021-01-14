@@ -1,8 +1,8 @@
 PlayerHands = {}
 
 function PlayerHands.Init() end
-function PlayerHands.OnEnter(enterObject) end
-function PlayerHands.OnLeave(leaveObject) end
+function PlayerHands.OnEnter(_) end
+function PlayerHands.OnLeave(_) end
 
 PlayerHands.PlayerColors = { "White", "Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Pink" }
 
@@ -25,9 +25,8 @@ function PlayerHands.HandleDrop(droppingPlayerColor, droppedObject)
 
     local playerReceivingHand = handsObjectIsIn[1]
     if playerReceivingHand ~= droppingPlayerColor then
-        PlayerHands.broadcastMessage("Red", "Don't put cards directly in player hands.")
-        PlayerHands.broadcastMessage("Red", "Put cards in card zone in front of player.")
-        droppedObject.ignore_fog_of_war = true
+        PlayerHands.broadcastMessage("Red", Strings.get("DoNotPutCardInHands"))
+        PlayerHands.broadcastMessage("Red", Strings.get("PutCardsInCardZone"))
         droppedObject.setPosition(Player[playerReceivingHand].getHandTransform(2).position)
     end
 end
