@@ -11,11 +11,16 @@ describe("deck", function()
     local wrapperMock = nil
     local waitMock = nil
     local colorMock = nil
+    local startingLastCardPlaced = nil
 
     before_each(function()
         colorMock = mockagne.getMock()
         wrapperMock = mockagne.getMock()
         wrapperMock.Color = colorMock
+        startingLastCardPlaced = createMockCard()
+        function startingLastCardPlaced.getPosition()
+            return {x = 1, y = 1}
+        end
 
         _G.Config = {
             DiscardDropZoneGuid = "discardDropZoneGuid",
@@ -35,7 +40,9 @@ describe("deck", function()
 
         DiscardPile.discardDropZone = mockagne.getMock()
         DiscardPile.discardSlot1 = mockagne.getMock()
-        DiscardPile.lastCardPlaced = mockagne.getMock()
+        DiscardPile.cardsPlayed = {}
+        table.insert(DiscardPile.cardsPlayed, startingLastCardPlaced)
+        when(DiscardPile.discardDropZone.getObjects()).thenAnswer({startingLastCardPlaced})
     end)
 
     it("should grab objects using guids from config on init", function()
@@ -72,6 +79,23 @@ describe("deck", function()
         assert.equal(0, #DiscardPile.cardsHeld)
     end)
 
+    it("should remove object from cardsPlayed on leave", function()
+        DiscardPile.cardsHeld = {}
+        table.insert(DiscardPile.cardsHeld, "object")
+        DiscardPile.cardsPlayed = {}
+        table.insert(DiscardPile.cardsPlayed, "object")
+
+        assert.equal(1, #DiscardPile.cardsHeld)
+        assert.equal("object", DiscardPile.cardsHeld[1])
+        assert.equal(1, #DiscardPile.cardsPlayed)
+        assert.equal("object", DiscardPile.cardsPlayed[1])
+
+        DiscardPile.OnLeave("object")
+    
+        assert.equal(0, #DiscardPile.cardsHeld)
+        assert.equal(0, #DiscardPile.cardsPlayed)
+    end)
+
     it("should do nothing when card is not in cardsHeld on leave", function()
         DiscardPile.cardsHeld = {}
 
@@ -95,14 +119,16 @@ describe("deck", function()
     it("should handle first card dropped on HandleDrop", function()
         local object = createMockCard()
         DiscardPile.cardsHeld = {object}
+        DiscardPile.cardsPlayed = {}
 
+        DiscardPile.discardDropZone = mockagne.getMock()
         when(DiscardPile.discardDropZone.getObjects()).thenAnswer({})
         when(DiscardPile.discardSlot1.getPosition()).thenAnswer("discard slot 1 position")
 
         DiscardPile.HandleDrop("Red", object)
 
         assert.equal(0, #DiscardPile.cardsHeld)
-        assert.equal(object, DiscardPile.lastCardPlaced)
+        assert.equal(object, DiscardPile.cardsPlayed[1])
         assert.is_false(object.sticky)
         assert.is_true(object.setRotationSmoothCalled)
         assert.is_true(object.setPositionSmoothCalled)
@@ -115,13 +141,10 @@ describe("deck", function()
         local object = createMockCard()
         DiscardPile.cardsHeld = {object}
 
-        when(DiscardPile.discardDropZone.getObjects()).thenAnswer({DiscardPile.lastCardPlaced})
-        when(DiscardPile.lastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
-
         DiscardPile.HandleDrop("Red", object)
 
         assert.equal(0, #DiscardPile.cardsHeld)
-        assert.equal(object, DiscardPile.lastCardPlaced)
+        assert.equal(object, DiscardPile.cardsPlayed[2])
         assert.is_false(object.sticky)
         assert.is_true(object.setRotationSmoothCalled)
         assert.is_true(object.setPositionSmoothCalled)
@@ -135,9 +158,6 @@ describe("deck", function()
         local object = createMockCard()
         DiscardPile.cardsHeld = {object}
 
-        when(DiscardPile.discardDropZone.getObjects()).thenAnswer({DiscardPile.lastCardPlaced})
-        when(DiscardPile.lastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
-
         DiscardPile.HandleDrop("Red", object)
 
         assert.equal("PlayedBy", object.setVarCalledWith[1].variableName)
@@ -147,9 +167,6 @@ describe("deck", function()
     it("should register addContextMenuItems on played card", function()
         local object = createMockCard()
         DiscardPile.cardsHeld = {object}
-
-        when(DiscardPile.discardDropZone.getObjects()).thenAnswer({DiscardPile.lastCardPlaced})
-        when(DiscardPile.lastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
 
         DiscardPile.HandleDrop("Red", object)
 
@@ -163,8 +180,6 @@ describe("deck", function()
         before_each(function()
             card = createMockCard()
             DiscardPile.cardsHeld = {card}
-            when(DiscardPile.discardDropZone.getObjects()).thenAnswer({DiscardPile.lastCardPlaced})
-            when(DiscardPile.lastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
 
             DiscardPile.HandleDrop("Red", card)
             card.addContextMenuItemCalledWith[1].handlerFunction("Blue")
@@ -195,8 +210,7 @@ describe("deck", function()
         before_each(function()
             card = createMockCard()
             DiscardPile.cardsHeld = {card}
-            when(DiscardPile.discardDropZone.getObjects()).thenAnswer({DiscardPile.lastCardPlaced})
-            when(DiscardPile.lastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
+            when(startingLastCardPlaced.getPosition()).thenAnswer({x = 1, y = 1})
             _G.Deck = {
                 deckObject = {
                     takeObject = function(obj)
@@ -283,6 +297,7 @@ describe("deck", function()
         function object.clearContextMenu()
             object.clearContextMenuCalled = true
         end
+        function object.setLock() end
         return object
     end
 end)

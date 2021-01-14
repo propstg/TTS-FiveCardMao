@@ -3,9 +3,8 @@ DiscardPile = {}
 DiscardPile.discardDropZone = nil
 DiscardPile.discardSlot1 = nil
 DiscardPile.cardsHeld = {}
-DiscardPile.lastCardPlaced = nil
+DiscardPile.cardsPlayed = {}
 
--- TODO fix card placement when card is removed
 -- TODO compress pile button (or do it automatically?)
 -- TODO reshuffle button
 
@@ -23,6 +22,7 @@ function DiscardPile.OnLeave(leaveObject)
     if index >= 0 then
         table.remove(DiscardPile.cardsHeld, index)
     end
+    DiscardPile.removeCardFromPlayedCards(leaveObject)
 end
 
 function DiscardPile.HandleDrop(playerColor, droppedObject)
@@ -48,7 +48,7 @@ function DiscardPile.HandleDrop(playerColor, droppedObject)
             droppedObject.setPositionSmooth(DiscardPile.discardSlot1.getPosition(), false, true)
         else
             Stream.of(cardsInPile).forEach(function(card) card.setLock(true) end)
-            local newPosition = DiscardPile.lastCardPlaced.getPosition()
+            local newPosition = DiscardPile.getLastCardPlayed().getPosition()
             newPosition.x = newPosition.x + 0.75
             newPosition.y = newPosition.y + 1
             droppedObject.setPositionSmooth(newPosition, false, true)
@@ -60,7 +60,7 @@ function DiscardPile.HandleDrop(playerColor, droppedObject)
         DiscardPile.addBadPlayContextMenuItem(playerColor, droppedObject)
 
         droppedObject.setVar("PlayedBy", playerColor)
-        DiscardPile.lastCardPlaced = droppedObject
+        table.insert(DiscardPile.cardsPlayed, droppedObject)
     end
 end
 
@@ -99,6 +99,16 @@ function DiscardPile.addBadPlayContextMenuItem(player, droppedObject)
 
         droppedObject.clearContextMenu()
     end)
+end
+
+function DiscardPile.getLastCardPlayed()
+    return DiscardPile.cardsPlayed[#DiscardPile.cardsPlayed]
+end
+
+function DiscardPile.removeCardFromPlayedCards(cardToRemove)
+    DiscardPile.cardsPlayed = Stream.of(DiscardPile.cardsPlayed)
+        .filter(function(card) return card ~= cardToRemove end)
+        .collect()
 end
 
 function DiscardPile.broadcastPlayedMessage(playerColor, cardName)
